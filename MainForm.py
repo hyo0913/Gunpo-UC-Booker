@@ -77,6 +77,10 @@ class MainWidget(QWidget):
         self.ui.toolButtonAddBook.clicked.connect(self.onToolButtonAddBookClicked)
         self.ui.toolButtonRemoveBook.clicked.connect(self.onToolButtonRemoveBookClicked)
 
+    def appendLogMessage(self, message):
+        self.ui.textEditLog.append(message)
+        QApplication.processEvents()
+
     def loadConfig(self):
         settings = QSettings(configFile, QSettings.IniFormat)
 
@@ -169,6 +173,7 @@ class MainWidget(QWidget):
 
     def goToMonthPage(self):
         while True:
+            QApplication.processEvents()
             currYearMonthText = self.driver.find_element(By.CLASS_NAME, 'title_month').text
             if not currYearMonthText:
                 return False
@@ -227,6 +232,7 @@ class MainWidget(QWidget):
         element.click()
 
         while True:
+            QApplication.processEvents()
             dateStateText = self.driver.find_element(By.CSS_SELECTOR, dateElementSelector + ' > span').text
             if (dateStateText == '예약완료') or (dateStateText == '마감'):
                 return 1
@@ -295,51 +301,51 @@ class MainWidget(QWidget):
     def onPushButtonExecuteClicked(self):
         self.ui.textEditLog.clear()
         message = '예약 시작 ' + QTime.currentTime().toString();
-        self.ui.textEditLog.append(message)
+        self.appendLogMessage(message)
 
         if self.initWebDriver():
-            self.ui.textEditLog.append("브라우저 실행")
+            self.appendLogMessage("브라우저 실행")
         else:
-            self.ui.textEditLog.append("브라우저 실행 실패")
+            self.appendLogMessage("브라우저 실행 실패")
 
         if self.login():
-            self.ui.textEditLog.append("로드인 성공")
+            self.appendLogMessage("로드인 성공")
         else:
-            self.ui.textEditLog.append("로그인 실패")
+            self.appendLogMessage("로그인 실패")
 
         if self.goToBookPage():
-            self.ui.textEditLog.append("조회 성공")
+            self.appendLogMessage("조회 성공")
         else:
-            self.ui.textEditLog.append("조회 실패")
+            self.appendLogMessage("조회 실패")
 
         for self.currentBookItemWidget in self.bookItemWidgets:
             message = '조회 시작 ' + QTime.currentTime().toString();
-            self.ui.textEditLog.append(message)
+            self.appendLogMessage(message)
 
             centerText = self.currentBookItemWidget.centerText()
             facilityText = self.currentBookItemWidget.facilityText()
             areaText = self.currentBookItemWidget.areaText()
             timeText = self.currentBookItemWidget.time().toString()
             message = centerText + ' > ' + facilityText + ' > ' + areaText + ' - ' + timeText
-            self.ui.textEditLog.append(message)
+            self.appendLogMessage(message)
 
             status = self.enquiryBookTime()
             if status == 0:
-                self.ui.textEditLog.append("예약 시간 체크 성공")
+                self.appendLogMessage("예약 시간 체크 성공")
                 if self.applyBookDateTime():
                     if self.applyBookInfo():
-                        self.ui.textEditLog.append("예약 성공")
+                        self.appendLogMessage("예약 성공")
                     else:
-                        self.ui.textEditLog.append("예약 실패")
+                        self.appendLogMessage("예약 실패")
                         continue
                 else:
-                    self.ui.textEditLog.append("예약 실패")
+                    self.appendLogMessage("예약 실패")
                     continue
             elif status > 0:
-                self.ui.textEditLog.append("예약 불가")
+                self.appendLogMessage("예약 불가")
                 continue
             else:
-                self.ui.textEditLog.append("예약 시간 체크 실패")
+                self.appendLogMessage("예약 시간 체크 실패")
                 continue
 
     def onToolButtonAddBookClicked(self):
