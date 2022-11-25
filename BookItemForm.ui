@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BookItemWidget</class>
+ <widget class="QWidget" name="BookItemWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>463</width>
+    <height>22</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0,1">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QCheckBox" name="checkBoxEnable">
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="comboBoxCenter">
+     <item>
+      <property name="text">
+       <string>소규모체육시설</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="comboBoxFacility">
+     <item>
+      <property name="text">
+       <string>대야미풋살장</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="comboBoxArea">
+     <item>
+      <property name="text">
+       <string>대야미A구장(전철쪽)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>대야미B구장(차도쪽)</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTimeEdit" name="timeEditTime">
+     <property name="currentSection">
+      <enum>QDateTimeEdit::HourSection</enum>
+     </property>
+     <property name="time">
+      <time>
+       <hour>8</hour>
+       <minute>0</minute>
+       <second>0</second>
+      </time>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
