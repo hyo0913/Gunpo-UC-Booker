@@ -361,7 +361,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     QApplication.setOrganizationName("DevHyo")
-    QApplication.setApplicationName("Gunpo UC Bookker")
+    QApplication.setApplicationName("Gunpo UC Booker")
 
     widget = MainWidget()
     widget.loadConfig()
