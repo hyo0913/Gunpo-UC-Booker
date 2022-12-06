@@ -239,8 +239,7 @@ class MainWidget(QWidget):
             elif dateStateText == '예약가능':
                 break
             elif dateStateText == '예약불가':
-                self.driver.refresh()
-                sleep(0.3)
+                self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
             else:
                 return -1 #알 수 없는 오류
 
@@ -271,7 +270,7 @@ class MainWidget(QWidget):
         #recaptcha 클릭
         WebDriverWait(self.driver, 10).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[1]/div/div/div/iframe')))
         WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#recaptcha-anchor'))).click()
-        WebDriverWait(self.driver, 10).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'))
+        WebDriverWait(self.driver, 60).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true')) #로봇이 아닙니다 체크 기다림
         self.driver.switch_to.default_content()
         self.driver.find_element(By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]').click()
 
