@@ -287,7 +287,7 @@ class MainWidget(QWidget):
 
         WebDriverWait(self.driver, 10).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="writeForm"]/fieldset/table[3]/tbody/tr/td/div/div/div/div/div/iframe')))
         WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#recaptcha-anchor'))).click()
-        WebDriverWait(self.driver, 10).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'))
+        WebDriverWait(self.driver, 60).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'))
         self.driver.switch_to.default_content()
         self.driver.find_element(By.CSS_SELECTOR, '#chkrecapt_btn').click()
 
