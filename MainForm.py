@@ -168,7 +168,7 @@ class MainWidget(QWidget):
         return True
 
     def goToBookPage(self):
-        self.driver.find_element(By.XPATH, '//*[@id="contents"]/div[3]/section/ul[1]/li[2]/a').click()
+        self.driver.get('https://www.gunpouc.or.kr/fmcs/157')
         return True
 
     def goToMonthPage(self):
