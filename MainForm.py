@@ -2,14 +2,12 @@
 import sys
 
 from PySide6.QtWidgets import QApplication, QWidget
-from PySide6.QtCore import QSettings, QDate, QTime
+from PySide6.QtCore import Qt, QSettings, QDate, QTime, QElapsedTimer
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
 #     pyside6-uic form.ui -o ui_form.py, or
 #     pyside2-uic form.ui -o ui_form.py
-
-from time import sleep
 
 from ui_MainForm import Ui_MainWidget
 from BookItemForm import BookItemWidget
@@ -59,6 +57,40 @@ def getTimeIndex(hour):
             return 6
         case _:
             return -1
+
+def waitWebElement(driver, timeout, locator):
+    try:
+        WebDriverWait(driver, timeout).until(EC.presence_of_element_located(locator))
+        return True
+    except:
+        return False
+
+def waitWebElementClickable(driver, timeout, locator):
+    try:
+        WebDriverWait(driver, timeout).until(EC.element_to_be_clickable(locator))
+        return True
+    except:
+        return False
+
+def waitWebElementAttributeText(driver, timeout, locator, attribute, text):
+    timer = QElapsedTimer()
+
+    timer.start()
+    while not timer.hasExpired(timeout):
+        QApplication.processEvents()
+
+        try:
+            if WebDriverWait(driver, timeout).until(EC.text_to_be_present_in_element_attribute(locator, attribute, text)):
+                return True
+        except:
+            return False
+
+def processEventSleep(msec):
+    timer = QElapsedTimer()
+
+    timer.start()
+    while not timer.hasExpired(msec):
+        QApplication.processEvents()
 
 class MainWidget(QWidget):
     driver: webdriver
@@ -161,7 +193,7 @@ class MainWidget(QWidget):
 
     def login(self):
         self.driver.get('https://www.gunpouc.or.kr/fmcs/160')
-        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="user_id"]')))
+        if waitWebElement(self.driver, 3, (By.XPATH, '//*[@id="user_id"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="user_id"]').send_keys(self.ui.lineEditUserId.text())
         self.driver.find_element(By.XPATH, '//*[@id="user_password"]').send_keys(self.ui.lineEditUserPassword.text())
         self.driver.find_element(By.XPATH, '//*[@id="memberLoginForm"]/fieldset/div/p[3]/button').click()
@@ -202,13 +234,17 @@ class MainWidget(QWidget):
                 else:
                     break
 
+            processEventSleep(700)
+
         return True
 
     def enquiryBookTime(self):
         WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="center"]')))
 
         Select(self.driver.find_element(By.XPATH, '//*[@id="center"]')).select_by_value('GUNPO03') #"소규모체육시설(송죽체육관)" 선택
+        self.driver.implicitly_wait(0.5)
         Select(self.driver.find_element(By.XPATH, '//*[@id="part"]')).select_by_value('07') #"대야미풋살장" 선택
+        self.driver.implicitly_wait(0.5)
 
         areaValue = ''
         match self.currentBookItemWidget.area():
@@ -221,78 +257,136 @@ class MainWidget(QWidget):
 
         Select(self.driver.find_element(By.XPATH, '//*[@id="place"]')).select_by_value(areaValue) #"대야미A구장(전척쪽) 선택
         self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
+        processEventSleep(500)
 
-        if self.goToMonthPage():
-            pass
-        else:
+        if self.goToMonthPage() == False:
             return -1
 
         dateElementSelector = '#date-' + self.ui.calendarWidget.selectedDate().toString('yyyyMMdd')
-        element = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
-        element.click()
+        dateElement = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
+        dateElement.click()
+        processEventSleep(500)
 
         while True:
             QApplication.processEvents()
-            dateStateText = self.driver.find_element(By.CSS_SELECTOR, dateElementSelector + ' > span').text
+            dateStateText = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector + ' > span'))).text
+
             if (dateStateText == '예약완료') or (dateStateText == '마감'):
                 return 1
             elif dateStateText == '예약가능':
-                break
+                return 0;
             elif dateStateText == '예약불가':
-                self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
+                dateElement = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
+                dateElement.click() # 날짜 클릭
+                processEventSleep(700)
             else:
                 return -1 #알 수 없는 오류
 
-        hour = self.currentBookItemWidget.time().hour()
-
-        timeIndex = getTimeIndex(hour)
-        if timeIndex < 0:
-            return -3 #시간 오류
-
-        tableIndex = str(timeIndex + 1)
-        feeTextXPath = '//*[@id="contents"]/article/div[1]/div/div[5]/div[2]/div/div/table/tbody/tr[' + tableIndex + ']/td[3]'
-
-        feeText = self.driver.find_element(By.XPATH, feeTextXPath).text
-        if (feeText == '예약완료') or (feeText == '마감'):
-            return 1
-        elif feeText == '0': #예약가능
-            return 0
-        else:
-            return -1 #알 수 없는 오류
-
     def applyBookDateTime(self):
         hour = self.currentBookItemWidget.time().hour()
-
         timeIndex = getTimeIndex(hour)
-        checkBoxId = 'checkbox_time_' + str(timeIndex)
-        self.driver.find_element(By.ID, checkBoxId).click()
 
-        #recaptcha 클릭
-        WebDriverWait(self.driver, 10).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[1]/div/div/div/iframe')))
-        WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#recaptcha-anchor'))).click()
-        WebDriverWait(self.driver, 60).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true')) #로봇이 아닙니다 체크 기다림
-        self.driver.switch_to.default_content()
+        checkboxSellector = '#checkbox_time_' + str(timeIndex)
+        if waitWebElementClickable(self.driver, 3, (By.CSS_SELECTOR, checkboxSellector)) == False: return False
+        #if waitWebElement(self.driver, 2, (By.CSS_SELECTOR, checkboxSellector)) == False: return False
+        self.driver.find_element(By.CSS_SELECTOR, checkboxSellector).click()
+        processEventSleep(1000)
+
+        return True
+
+    def passRecaptcha1(self):
+        # 로봇이 아닙니다 프레임으로 변환
+        if WebDriverWait(self.driver, 5).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[1]/div/div/div/iframe'))) == False:
+            return False
+
+        # 로봇이 아닙니다 체크 박스 클릭
+        if waitWebElementClickable(self.driver, 5, (By.CSS_SELECTOR, '#recaptcha-anchor')) == False: return False
+        self.driver.find_element(By.CSS_SELECTOR, '#recaptcha-anchor').click()
+        processEventSleep(1000)
+
+        # 로봇이 아닙니다 체크 기다림
+        timeout = 5
+        if self.ui.checkBoxWaitRecaptcha.isChecked():
+            timeout = 60
+
+        if waitWebElementAttributeText(self.driver, timeout, (By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'):
+            pass
+        else:
+            self.driver.switch_to.default_content() # 원래 프레임으로 복귀
+            return False
+
+#        try:
+#            WebDriverWait(self.driver, timeout).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'))
+#        except:
+#            self.driver.switch_to.default_content() # 원래 프레임으로 복귀
+#            return False
+
+        self.driver.switch_to.default_content() # 원래 프레임으로 복귀
+
+        if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]').click()
+        processEventSleep(1000)
 
         return True
 
     def applyBookInfo(self):
-        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="team_nm"]')))
-
+        if waitWebElement(self.driver, 5, (By.XPATH, '//*[@id="team_nm"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="team_nm"]').send_keys(self.ui.lineEditTeamName.text())
-        self.driver.find_element(By.XPATH, '//*[@id="users"]').send_keys(self.ui.spinBoxPlayerCount.value())
-        self.driver.find_element(By.XPATH, '//*[@id="mobile_tel"]').send_keys(self.ui.lineEditPhoneNumber.text())
-        self.driver.find_element(By.XPATH, '//*[@id="purpose"]').send_keys(self.ui.lineEditPurposeOfUse.text())
-        self.driver.find_element(By.CSS_SELECTOR, '#agree_use1').click()
 
-        WebDriverWait(self.driver, 10).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="writeForm"]/fieldset/table[3]/tbody/tr/td/div/div/div/div/div/iframe')))
-        WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#recaptcha-anchor'))).click()
-        WebDriverWait(self.driver, 60).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'))
-        self.driver.switch_to.default_content()
+        if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="users"]')) == False: return False
+        self.driver.find_element(By.XPATH, '//*[@id="users"]').send_keys(self.ui.spinBoxPlayerCount.value())
+
+        if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="mobile_tel"]')) == False: return False
+        self.driver.find_element(By.XPATH, '//*[@id="mobile_tel"]').send_keys(self.ui.lineEditPhoneNumber.text())
+
+        if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="purpose"]')) == False: return False
+        self.driver.find_element(By.XPATH, '//*[@id="purpose"]').send_keys(self.ui.lineEditPurposeOfUse.text())
+
+        if waitWebElement(self.driver, 1, (By.CSS_SELECTOR, '#agree_use1')) == False: return False
+        self.driver.find_element(By.CSS_SELECTOR, '#agree_use1').click()
+        processEventSleep(600)
+
+        return True
+
+    def passRecaptcha2(self):
+        # 로봇이 아닙니다 프레임으로 변환
+        if WebDriverWait(self.driver, 5).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="writeForm"]/fieldset/table[3]/tbody/tr/td/div/div/div/div/div/iframe'))) == False:
+            return False
+
+        if waitWebElementClickable(self.driver, 5, (By.CSS_SELECTOR, '#recaptcha-anchor')) == False: return False
+        self.driver.find_element(By.CSS_SELECTOR, '#recaptcha-anchor').click()
+        processEventSleep(1000)
+
+        # 로봇이 아닙니다 체크 기다림
+        timeout = 5
+        if self.ui.checkBoxWaitRecaptcha.isChecked():
+            timeout = 60
+
+        if waitWebElementAttributeText(self.driver, timeout, (By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'):
+            pass
+        else:
+            self.driver.switch_to.default_content() # 원래 프레임으로 복귀
+            return False
+
+#        try:
+#            WebDriverWait(self.driver, timeout).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'))
+#        except:
+#            self.driver.switch_to.default_content() # 원래 프레임으로 복귀
+#            return False
+
+        self.driver.switch_to.default_content() # 원래 프레임으로 복귀
+
+        return True
+
+    def submitBook(self):
+        if waitWebElement(self.driver, 1, (By.CSS_SELECTOR, '#chkrecapt_btn')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#chkrecapt_btn').click()
 
-        resultElement = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[1]')))
-        if resultElement.text.endswith('신청완료'):
+        if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[1]')) == False: return False
+        successText = self.driver.find_element(By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[1]').text
+        processEventSleep(1000)
+
+        if successText.endswith('신청완료'):
             return True
         else:
             return False
@@ -306,46 +400,75 @@ class MainWidget(QWidget):
             self.appendLogMessage("브라우저 실행")
         else:
             self.appendLogMessage("브라우저 실행 실패")
+            return
 
         if self.login():
-            self.appendLogMessage("로드인 성공")
+            self.appendLogMessage("로그인")
         else:
             self.appendLogMessage("로그인 실패")
+            return
 
         if self.goToBookPage():
-            self.appendLogMessage("조회 성공")
+            self.appendLogMessage("조회 페이지 이동")
         else:
             self.appendLogMessage("조회 실패")
+            return
+
+        bookNumber = 1
 
         for self.currentBookItemWidget in self.bookItemWidgets:
+            self.appendLogMessage(str(bookNumber) + ' --------------------------------------------')
+            bookNumber = bookNumber + 1
             message = '조회 시작 ' + QTime.currentTime().toString();
             self.appendLogMessage(message)
 
             centerText = self.currentBookItemWidget.centerText()
             facilityText = self.currentBookItemWidget.facilityText()
             areaText = self.currentBookItemWidget.areaText()
+            dateText = self.ui.calendarWidget.selectedDate().toString(Qt.DateFormat.ISODate)
             timeText = self.currentBookItemWidget.time().toString()
-            message = centerText + ' > ' + facilityText + ' > ' + areaText + ' - ' + timeText
+            message = centerText + ' > ' + facilityText + ' > ' + areaText + ' - ' + dateText + ' - ' + timeText
             self.appendLogMessage(message)
 
             status = self.enquiryBookTime()
             if status == 0:
-                self.appendLogMessage("예약 시간 체크 성공")
-                if self.applyBookDateTime():
-                    if self.applyBookInfo():
-                        self.appendLogMessage("예약 성공")
-                    else:
-                        self.appendLogMessage("예약 실패")
-                        continue
-                else:
-                    self.appendLogMessage("예약 실패")
-                    continue
+                self.appendLogMessage("예약 시간 확인")
             elif status > 0:
                 self.appendLogMessage("예약 불가")
                 continue
             else:
+                self.appendLogMessage("예약 시간 확인 실패")
+                continue
+
+            if self.applyBookDateTime():
+                pass
+            else:
                 self.appendLogMessage("예약 시간 체크 실패")
                 continue
+
+            if self.passRecaptcha1():
+                pass
+            else:
+                self.appendLogMessage("로봇이 아닙니다(1) 에서 막히네.. 글렀어..")
+                return
+
+            if self.applyBookInfo():
+                pass
+            else:
+                self.appendLogMessage("예약 정보 입력 실패")
+                continue
+
+            if self.passRecaptcha2():
+                pass
+            else:
+                self.appendLogMessage("로봇이 아닙니다(2) 에서 막히네.. 글렀어..")
+                return
+
+            if self.submitBook():
+                self.appendLogMessage("예약 성공")
+                break
+            else:
+                self.appendLogMessage("예약 실패라고?!")
 
     def onToolButtonAddBookClicked(self):
         bookItemWidget = BookItemWidget(self)
