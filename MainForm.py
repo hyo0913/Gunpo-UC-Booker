@@ -38,6 +38,10 @@ configKeyBookCenter = "Center"
 configKeyBookFacility = "Facility"
 configKeyBookArea = "Area"
 configKeyBookTime = "Time"
+#
+configGroupAppSettings = "App_Settings"
+configKeyWaitRecaptcha = "Wait_recaptcha"
+configKeyWaitRecaptchaTimeout = "Wait_recaptcha_timeout"
 
 def getTimeIndex(hour):
     match hour:
@@ -128,6 +132,11 @@ class MainWidget(QWidget):
         self.ui.lineEditPurposeOfUse.setText(settings.value(configKeyPurposeOfUse))
         settings.endGroup() #configGroupBookApplicationForm
 
+        settings.beginGroup(configGroupAppSettings)
+        self.ui.checkBoxWaitRecaptcha.setChecked(bool(settings.value(configKeyWaitRecaptcha, False, bool)))
+        self.ui.spinBoxWaitRecaptchaTimeout.setValue(int(settings.value(configKeyWaitRecaptchaTimeout, 60, int)))
+        settings.endGroup() # configGroupAppSettings
+
         settings.beginGroup(configGroupBookItems)
         date = settings.value(configKeyBookDate)
         self.ui.calendarWidget.setSelectedDate(date)
@@ -164,6 +173,11 @@ class MainWidget(QWidget):
         settings.setValue(configKeyPhoneNumber, self.ui.lineEditPhoneNumber.text())
         settings.setValue(configKeyPurposeOfUse, self.ui.lineEditPurposeOfUse.text())
         settings.endGroup() #configGroupBookApplicationForm
+
+        settings.beginGroup(configGroupAppSettings)
+        settings.setValue(configKeyWaitRecaptcha, self.ui.checkBoxWaitRecaptcha.isChecked())
+        settings.setValue(configKeyWaitRecaptchaTimeout, self.ui.spinBoxWaitRecaptchaTimeout.value())
+        settings.endGroup() # configGroupAppSettings
 
         settings.beginGroup(configGroupBookItems)
         settings.setValue(configKeyBookDate, self.ui.calendarWidget.selectedDate())
@@ -307,19 +321,13 @@ class MainWidget(QWidget):
         # 로봇이 아닙니다 체크 기다림
         timeout = 5
         if self.ui.checkBoxWaitRecaptcha.isChecked():
-            timeout = 60
+            timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
 
         if waitWebElementAttributeText(self.driver, timeout, (By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'):
             pass
         else:
             self.driver.switch_to.default_content() # 원래 프레임으로 복귀
             return False
-
-#        try:
-#            WebDriverWait(self.driver, timeout).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'))
-#        except:
-#            self.driver.switch_to.default_content() # 원래 프레임으로 복귀
-#            return False
 
         self.driver.switch_to.default_content() # 원래 프레임으로 복귀
 
@@ -360,19 +368,13 @@ class MainWidget(QWidget):
         # 로봇이 아닙니다 체크 기다림
         timeout = 5
         if self.ui.checkBoxWaitRecaptcha.isChecked():
-            timeout = 60
+            timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
 
         if waitWebElementAttributeText(self.driver, timeout, (By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'):
             pass
         else:
             self.driver.switch_to.default_content() # 원래 프레임으로 복귀
             return False
-
-#        try:
-#            WebDriverWait(self.driver, timeout).until(EC.text_to_be_present_in_element_attribute((By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'))
-#        except:
-#            self.driver.switch_to.default_content() # 원래 프레임으로 복귀
-#            return False
 
         self.driver.switch_to.default_content() # 원래 프레임으로 복귀
 
