@@ -302,7 +302,6 @@ class MainWidget(QWidget):
 
         checkboxSellector = '#checkbox_time_' + str(timeIndex)
         if waitWebElementClickable(self.driver, 3, (By.CSS_SELECTOR, checkboxSellector)) == False: return False
-        #if waitWebElement(self.driver, 2, (By.CSS_SELECTOR, checkboxSellector)) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, checkboxSellector).click()
         processEventSleep(1000)
 
@@ -340,15 +339,19 @@ class MainWidget(QWidget):
     def applyBookInfo(self):
         if waitWebElement(self.driver, 5, (By.XPATH, '//*[@id="team_nm"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="team_nm"]').send_keys(self.ui.lineEditTeamName.text())
+        processEventSleep(500)
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="users"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="users"]').send_keys(self.ui.spinBoxPlayerCount.value())
+        processEventSleep(400)
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="mobile_tel"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="mobile_tel"]').send_keys(self.ui.lineEditPhoneNumber.text())
+        processEventSleep(700)
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="purpose"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="purpose"]').send_keys(self.ui.lineEditPurposeOfUse.text())
+        processEventSleep(400)
 
         if waitWebElement(self.driver, 1, (By.CSS_SELECTOR, '#agree_use1')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#agree_use1').click()
