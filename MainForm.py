@@ -323,7 +323,7 @@ class MainWidget(QWidget):
         processEventSleep(1000)
 
         # 로봇이 아닙니다 체크 기다림
-        timeout = 5
+        timeout = 2
         if self.ui.checkBoxWaitRecaptcha.isChecked():
             timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
 
@@ -374,7 +374,7 @@ class MainWidget(QWidget):
         processEventSleep(1000)
 
         # 로봇이 아닙니다 체크 기다림
-        timeout = 5
+        timeout = 2
         if self.ui.checkBoxWaitRecaptcha.isChecked():
             timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
 
