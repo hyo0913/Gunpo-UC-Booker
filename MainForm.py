@@ -215,6 +215,11 @@ class MainWidget(QWidget):
 
     def goToBookPage(self):
         self.driver.get('https://www.gunpouc.or.kr/fmcs/157')
+
+        if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')) == False: return False
+        self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
+        processEventSleep(300)
+
         return True
 
     def goToMonthPage(self):
