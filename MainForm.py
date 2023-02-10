@@ -30,7 +30,6 @@ configKeyPlayerCount = "Player_count"
 configKeyPhoneNumber = "Phone_number"
 configKeyPurposeOfUse = "Purpose_of_use"
 configGroupBookItems = "Book_items"
-configKeyBookDate = "Book_date"
 configKeyBookItemCount = "Book_item_count"
 configGroupBookItem = "Book_item"
 configKeyBookEnabled = "Enabled"
@@ -107,6 +106,10 @@ class MainWidget(QWidget):
         self.ui = Ui_MainWidget()
         self.ui.setupUi(self)
 
+        date = QDate.currentDate()
+        date.setDate(date.year(), ((date.month() + 1) % 12), date.day())
+        self.ui.calendarWidget.setSelectedDate(date)
+
         self.ui.pushButtonExecute.clicked.connect(self.onPushButtonExecuteClicked)
         self.ui.pushButtonSave.clicked.connect(self.saveConfig)
         self.ui.pushButtonExit.clicked.connect(self.close)
@@ -138,8 +141,6 @@ class MainWidget(QWidget):
         settings.endGroup() # configGroupAppSettings
 
         settings.beginGroup(configGroupBookItems)
-        date = settings.value(configKeyBookDate)
-        self.ui.calendarWidget.setSelectedDate(date)
         itemCount = int(settings.value(configKeyBookItemCount, 0, int))
         itemIndex = 0
         while itemIndex < itemCount:
@@ -180,7 +181,6 @@ class MainWidget(QWidget):
         settings.endGroup() # configGroupAppSettings
 
         settings.beginGroup(configGroupBookItems)
-        settings.setValue(configKeyBookDate, self.ui.calendarWidget.selectedDate())
         settings.setValue(configKeyBookItemCount, len(self.bookItemWidgets))
         itemIndex = 0
         for bookItemWidget in self.bookItemWidgets:
