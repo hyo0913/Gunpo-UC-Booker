@@ -220,6 +220,7 @@ class MainWidget(QWidget):
     def goToMonthPage(self):
         while True:
             QApplication.processEvents()
+            if waitWebElement(self.driver, 2, (By.CLASS_NAME, 'title_month')) == False: return False
             currYearMonthText = self.driver.find_element(By.CLASS_NAME, 'title_month').text
             if not currYearMonthText:
                 return False
@@ -255,23 +256,11 @@ class MainWidget(QWidget):
     def enquiryBookTime(self):
         WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="center"]')))
 
-        Select(self.driver.find_element(By.XPATH, '//*[@id="center"]')).select_by_value('GUNPO03') #"소규모체육시설(송죽체육관)" 선택
+        Select(self.driver.find_element(By.XPATH, '//*[@id="center"]')).select_by_visible_text(self.currentBookItemWidget.centerText()) #"소규모체육시설(송죽체육관)" 선택
         self.driver.implicitly_wait(0.5)
-        Select(self.driver.find_element(By.XPATH, '//*[@id="part"]')).select_by_value('07') #"대야미풋살장" 선택
+        Select(self.driver.find_element(By.XPATH, '//*[@id="part"]')).select_by_visible_text(self.currentBookItemWidget.facilityText()) #"대야미풋살장" 선택
         self.driver.implicitly_wait(0.5)
-
-        areaValue = ''
-        match self.currentBookItemWidget.area():
-            case Area.DaeyamiFutsalStadiumA.value:
-                areaValue = '5'
-            case Area.DaeyamiFutsalStadiumB.value:
-                areaValue = '6'
-            case _:
-                return -2 #구장 오류
-
-        Select(self.driver.find_element(By.XPATH, '//*[@id="place"]')).select_by_value(areaValue) #"대야미A구장(전척쪽) 선택
-        self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
-        processEventSleep(500)
+        Select(self.driver.find_element(By.XPATH, '//*[@id="place"]')).select_by_visible_text(self.currentBookItemWidget.areaText()) #"대야미A구장(전척쪽) 선택
 
         if self.goToMonthPage() == False:
             return -1
@@ -279,7 +268,7 @@ class MainWidget(QWidget):
         dateElementSelector = '#date-' + self.ui.calendarWidget.selectedDate().toString('yyyyMMdd')
         dateElement = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
         dateElement.click()
-        processEventSleep(500)
+        processEventSleep(300)
 
         while True:
             QApplication.processEvents()
@@ -288,13 +277,24 @@ class MainWidget(QWidget):
             if (dateStateText == '예약완료') or (dateStateText == '마감'):
                 return 1
             elif dateStateText == '예약가능':
-                return 0;
+                break
             elif dateStateText == '예약불가':
                 dateElement = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
                 dateElement.click() # 날짜 클릭
-                processEventSleep(700)
+                processEventSleep(500)
             else:
-                return -1 #알 수 없는 오류
+                return -1
+
+        hour = self.currentBookItemWidget.time().hour()
+        timeIndex = str(getTimeIndex(hour) + 1)
+        timeStateText = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[5]/div[2]/div/div/table/tbody/tr[' + timeIndex + ']/td[3]'))).text
+
+        if (timeStateText == '예약완료') or (timeStateText == '마감'):
+            return 1
+        elif timeStateText == '-':
+            return -1
+        else:
+            return 0
 
     def applyBookDateTime(self):
         hour = self.currentBookItemWidget.time().hour()
@@ -309,7 +309,7 @@ class MainWidget(QWidget):
         return True
 
     def passRecaptcha1(self):
-        # 로봇이 아닙니다 프레임으로 변환
+        # 로봇이 아닙니다 프레임으로 전환
         if WebDriverWait(self.driver, 5).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[1]/div/div/div/iframe'))) == False:
             return False
 
@@ -357,7 +357,7 @@ class MainWidget(QWidget):
         return True
 
     def passRecaptcha2(self):
-        # 로봇이 아닙니다 프레임으로 변환
+        # 로봇이 아닙니다 프레임으로 전환
         if WebDriverWait(self.driver, 5).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="writeForm"]/fieldset/table[3]/tbody/tr/td/div/div/div/div/div/iframe'))) == False:
             return False
 
@@ -416,11 +416,15 @@ class MainWidget(QWidget):
             self.appendLogMessage("조회 실패")
             return
 
-        bookNumber = 1
+        bookNumber = 0
 
         for self.currentBookItemWidget in self.bookItemWidgets:
-            self.appendLogMessage(str(bookNumber) + ' --------------------------------------------')
             bookNumber = bookNumber + 1
+
+            if self.currentBookItemWidget.isEnabled() == False:
+                continue
+
+            self.appendLogMessage(str(bookNumber) + ' --------------------------------------------')
             message = '조회 시작 ' + QTime.currentTime().toString();
             self.appendLogMessage(message)
 

@@ -37,7 +37,7 @@
     <widget class="QComboBox" name="comboBoxCenter">
      <item>
       <property name="text">
-       <string>소규모체육시설</string>
+       <string>소규모체육시설(송죽체육관)</string>
       </property>
      </item>
     </widget>
