@@ -11,7 +11,6 @@ from PySide6.QtCore import Qt, QSettings, QDate, QTime, QElapsedTimer
 
 from ui_MainForm import Ui_MainWidget
 from BookItemForm import BookItemWidget
-from BookItemForm import Area
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -19,6 +18,8 @@ from selenium.webdriver.support.select import Select
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+from obscure_password import obscure, unobscure
 
 configFile = "Config.ini"
 configGroupUserInfo = "User_Info"
@@ -124,8 +125,11 @@ class MainWidget(QWidget):
         settings = QSettings(configFile, QSettings.IniFormat)
 
         settings.beginGroup(configGroupUserInfo)
+        # user id
         self.ui.lineEditUserId.setText(settings.value(configKeyUserId))
-        self.ui.lineEditUserPassword.setText(settings.value(configKeyUserPassword))
+        # password
+        password = settings.value(configKeyUserPassword)
+        self.ui.lineEditUserPassword.setText(unobscure(password))
         settings.endGroup() #configGroupUserInfo
 
         settings.beginGroup(configGroupBookApplicationForm)
@@ -164,8 +168,11 @@ class MainWidget(QWidget):
         settings.clear()
 
         settings.beginGroup(configGroupUserInfo)
+        # user id
         settings.setValue(configKeyUserId, self.ui.lineEditUserId.text())
-        settings.setValue(configKeyUserPassword, self.ui.lineEditUserPassword.text())
+        #password
+        password = self.ui.lineEditUserPassword.text()
+        settings.setValue(configKeyUserPassword, obscure(password))
         settings.endGroup() #configGroupUserInfo
 
         settings.beginGroup(configGroupBookApplicationForm)
@@ -218,7 +225,7 @@ class MainWidget(QWidget):
 
         if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
-        processEventSleep(300)
+        processEventSleep(200)
 
         return True
 
@@ -254,7 +261,7 @@ class MainWidget(QWidget):
                 else:
                     break
 
-            processEventSleep(700)
+            processEventSleep(100)
 
         return True
 
@@ -273,7 +280,7 @@ class MainWidget(QWidget):
         dateElementSelector = '#date-' + self.ui.calendarWidget.selectedDate().toString('yyyyMMdd')
         dateElement = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
         dateElement.click()
-        processEventSleep(300)
+        processEventSleep(100)
 
         while True:
             QApplication.processEvents()
@@ -286,7 +293,7 @@ class MainWidget(QWidget):
             elif dateStateText == '예약불가':
                 dateElement = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
                 dateElement.click() # 날짜 클릭
-                processEventSleep(500)
+                processEventSleep(100)
             else:
                 return -1
 
@@ -308,7 +315,7 @@ class MainWidget(QWidget):
         checkboxSellector = '#checkbox_time_' + str(timeIndex)
         if waitWebElementClickable(self.driver, 3, (By.CSS_SELECTOR, checkboxSellector)) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, checkboxSellector).click()
-        processEventSleep(1000)
+        processEventSleep(100)
 
         return True
 
@@ -320,7 +327,7 @@ class MainWidget(QWidget):
         # 로봇이 아닙니다 체크 박스 클릭
         if waitWebElementClickable(self.driver, 5, (By.CSS_SELECTOR, '#recaptcha-anchor')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#recaptcha-anchor').click()
-        processEventSleep(1000)
+        processEventSleep(300)
 
         # 로봇이 아닙니다 체크 기다림
         timeout = 2
@@ -337,7 +344,7 @@ class MainWidget(QWidget):
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]').click()
-        processEventSleep(1000)
+        processEventSleep(100)
 
         return True
 
@@ -371,7 +378,7 @@ class MainWidget(QWidget):
 
         if waitWebElementClickable(self.driver, 5, (By.CSS_SELECTOR, '#recaptcha-anchor')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#recaptcha-anchor').click()
-        processEventSleep(1000)
+        processEventSleep(300)
 
         # 로봇이 아닙니다 체크 기다림
         timeout = 2
@@ -394,7 +401,6 @@ class MainWidget(QWidget):
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[1]')) == False: return False
         successText = self.driver.find_element(By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[1]').text
-        processEventSleep(1000)
 
         if successText.endswith('신청완료'):
             return True
