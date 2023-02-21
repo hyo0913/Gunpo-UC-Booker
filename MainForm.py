@@ -2,7 +2,7 @@
 import sys
 
 from PySide6.QtWidgets import QApplication, QWidget
-from PySide6.QtCore import Qt, QSettings, QDate, QTime, QElapsedTimer
+from PySide6.QtCore import Qt, QSettings, QDateTime, QDate, QTime, QElapsedTimer
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
@@ -101,11 +101,14 @@ class MainWidget(QWidget):
     driverOptions: webdriver.ChromeOptions
     bookItemWidgets = []
     currentBookItemWidget: BookItemWidget
+    dateElementSelector: str
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_MainWidget()
         self.ui.setupUi(self)
+
+        self.ui.labelCountDown.setVisible(False)
 
         date = QDate.currentDate()
         date.setDate(date.year(), ((date.month() + 1) % 12), date.day())
@@ -229,6 +232,17 @@ class MainWidget(QWidget):
 
         return True
 
+    def selectPlace(self) :
+        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="center"]')))
+
+        Select(self.driver.find_element(By.XPATH, '//*[@id="center"]')).select_by_visible_text(self.currentBookItemWidget.centerText()) #"소규모체육시설(송죽체육관)" 선택
+        self.driver.implicitly_wait(0.5)
+        Select(self.driver.find_element(By.XPATH, '//*[@id="part"]')).select_by_visible_text(self.currentBookItemWidget.facilityText()) #"대야미풋살장" 선택
+        self.driver.implicitly_wait(0.5)
+        Select(self.driver.find_element(By.XPATH, '//*[@id="place"]')).select_by_visible_text(self.currentBookItemWidget.areaText()) #"대야미A구장(전척쪽) 선택
+
+        return True
+
     def goToMonthPage(self):
         while True:
             QApplication.processEvents()
@@ -265,35 +279,66 @@ class MainWidget(QWidget):
 
         return True
 
-    def enquiryBookTime(self):
-        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="center"]')))
+    def waitServerTime(self):
+        clockDriver = webdriver.Chrome()
+        clockDriver.get("https://time.navyism.com/?host=www.gunpouc.or.kr")
 
-        Select(self.driver.find_element(By.XPATH, '//*[@id="center"]')).select_by_visible_text(self.currentBookItemWidget.centerText()) #"소규모체육시설(송죽체육관)" 선택
-        self.driver.implicitly_wait(0.5)
-        Select(self.driver.find_element(By.XPATH, '//*[@id="part"]')).select_by_visible_text(self.currentBookItemWidget.facilityText()) #"대야미풋살장" 선택
-        self.driver.implicitly_wait(0.5)
-        Select(self.driver.find_element(By.XPATH, '//*[@id="place"]')).select_by_visible_text(self.currentBookItemWidget.areaText()) #"대야미A구장(전척쪽) 선택
+        if waitWebElementClickable(clockDriver, 10, (By.XPATH, '//*[@id="time_area"]')) == False: return False
 
-        if self.goToMonthPage() == False:
-            return -1
+        openTime = QTime(10, 0)
+        self.ui.labelCountDown.setVisible(True)
 
-        dateElementSelector = '#date-' + self.ui.calendarWidget.selectedDate().toString('yyyyMMdd')
-        dateElement = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
-        dateElement.click()
-        processEventSleep(100)
+        timer = QElapsedTimer()
+        timer.start()
 
         while True:
-            QApplication.processEvents()
-            dateStateText = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector + ' > span'))).text
+            timeText = clockDriver.find_element(By.XPATH, '//*[@id="time_area"]').text
+            currDateTime = QDateTime.fromString(timeText, 'yyyy년 MM월 dd일 hh시 mm분 ss초')
+
+            totalSec = currDateTime.time().secsTo(openTime)
+            sec = int(totalSec % 60)
+            min = int(totalSec / 60)
+            hour = int(min / 60)
+            min = int(min % 60)
+
+            countDownText = ''
+            if hour > 0: countDownText = str(hour) + '시간 '
+            if min > 0: countDownText = countDownText + str(min) + '분 '
+            countDownText = countDownText + str(sec) + '초 남음'
+
+            self.ui.labelCountDown.setText(countDownText)
+
+            if totalSec <= 0:
+                QApplication.processEvents()
+                break
+
+            # 자동 로그아웃 방지. 제한 25분
+            if timer.hasExpired(60*20*1000):
+                self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
+
+            processEventSleep(1)
+
+        self.ui.labelCountDown.setVisible(False)
+
+        return True
+
+    def enquiryBookTime(self):
+        #dateElement = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, self.dateElementSelector)))
+        dateElement = self.driver.find_element(By.CSS_SELECTOR, self.dateElementSelector)
+        dateElement.click()
+        processEventSleep(1)
+
+        while True:
+            dateStateText = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, self.dateElementSelector + ' > span'))).text
 
             if (dateStateText == '예약완료') or (dateStateText == '마감'):
                 return 1
             elif dateStateText == '예약가능':
                 break
             elif dateStateText == '예약불가':
-                dateElement = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, dateElementSelector)))
+                dateElement = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, self.dateElementSelector)))
                 dateElement.click() # 날짜 클릭
-                processEventSleep(100)
+                processEventSleep(50)
             else:
                 return -1
 
@@ -409,6 +454,8 @@ class MainWidget(QWidget):
 
     def onPushButtonExecuteClicked(self):
         self.ui.textEditLog.clear()
+        self.dateElementSelector = '#date-' + self.ui.calendarWidget.selectedDate().toString('yyyyMMdd')
+
         message = '예약 시작 ' + QTime.currentTime().toString();
         self.appendLogMessage(message)
 
@@ -449,6 +496,24 @@ class MainWidget(QWidget):
             timeText = self.currentBookItemWidget.time().toString()
             message = centerText + ' > ' + facilityText + ' > ' + areaText + ' - ' + dateText + ' - ' + timeText
             self.appendLogMessage(message)
+
+            if self.selectPlace():
+                pass
+            else:
+                self.appendLogMessage("구장 선택 실패")
+                continue
+
+            if self.goToMonthPage():
+                pass
+            else:
+                self.appendLogMessage("날짜 선택 실패")
+                continue
+
+            if bookNumber == 1:
+                if self.waitServerTime():
+                    self.appendLogMessage("지금이닷!!")
+                else:
+                    self.appendLogMessage("서버 시간 기다리기 실패")
 
             status = self.enquiryBookTime()
             if status == 0:
