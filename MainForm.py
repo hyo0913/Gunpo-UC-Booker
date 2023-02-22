@@ -404,23 +404,23 @@ class MainWidget(QWidget):
     def applyBookInfo(self):
         if waitWebElement(self.driver, 5, (By.XPATH, '//*[@id="team_nm"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="team_nm"]').send_keys(self.ui.lineEditTeamName.text())
-        processEventSleep(200)
+        processEventSleep(50)
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="users"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="users"]').send_keys(self.ui.spinBoxPlayerCount.value())
-        processEventSleep(200)
+        processEventSleep(70)
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="mobile_tel"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="mobile_tel"]').send_keys(self.ui.lineEditPhoneNumber.text())
-        processEventSleep(300)
+        processEventSleep(60)
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="purpose"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="purpose"]').send_keys(self.ui.lineEditPurposeOfUse.text())
-        processEventSleep(200)
+        processEventSleep(50)
 
         if waitWebElement(self.driver, 1, (By.CSS_SELECTOR, '#agree_use1')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#agree_use1').click()
-        processEventSleep(100)
+        processEventSleep(40)
 
         return True
 
@@ -544,7 +544,6 @@ class MainWidget(QWidget):
                 pass
             else:
                 self.appendLogMessage("로봇이 아닙니다(1) 에서 막히네.. 글렀어..")
-                self.ui.pushButtonExecute.setEnabled(True)
                 return
 
             if self.applyBookInfo():
@@ -566,11 +565,7 @@ class MainWidget(QWidget):
                 self.appendLogMessage("예약 실패라고?!")
 
     def onPushButtonExecuteClicked(self):
-        self.ui.pushButtonExecute.setEnabled(False)
-        self.ui.pushButtonSave.setEnabled(False)
         self.executeBook()
-        self.ui.pushButtonExecute.setEnabled(True)
-        self.ui.pushButtonSave.setEnabled(True)
 
     def onToolButtonAddBookClicked(self):
         bookItemWidget = BookItemWidget(self)
