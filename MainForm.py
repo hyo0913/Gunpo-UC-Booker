@@ -150,6 +150,7 @@ class MainWidget(QWidget):
         settings.beginGroup(configGroupBookItems)
         itemCount = int(settings.value(configKeyBookItemCount, 0, int))
         itemIndex = 0
+        spacer = self.ui.verticalLayoutBookItems.takeAt(self.ui.verticalLayoutBookItems.count()-1)
         while itemIndex < itemCount:
             key = configGroupBookItem + '_' + str(itemIndex)
             itemIndex = itemIndex + 1
@@ -164,6 +165,7 @@ class MainWidget(QWidget):
             bookItemWidget.setArea(int(settings.value(configKeyBookArea)))
             bookItemWidget.setTime(settings.value(configKeyBookTime))
             settings.endGroup() #key
+        self.ui.verticalLayoutBookItems.addItem(spacer)
         settings.endGroup() #configGroupBookItems
 
     def saveConfig(self):
@@ -289,7 +291,7 @@ class MainWidget(QWidget):
     def waitServerTime(self):
         if waitWebElementClickable(self.clockDriver, 10, (By.XPATH, '//*[@id="time_area"]')) == False: return False
 
-        openTime = QTime(15, 34) # 서버 오픈 시간
+        openTime = QTime(10, 00) # 서버 오픈 시간
         self.ui.labelCountDown.setVisible(True)
 
         timer = QElapsedTimer()
@@ -572,7 +574,9 @@ class MainWidget(QWidget):
 
     def onToolButtonAddBookClicked(self):
         bookItemWidget = BookItemWidget(self)
+        spacer = self.ui.verticalLayoutBookItems.takeAt(self.ui.verticalLayoutBookItems.count()-1)
         self.ui.verticalLayoutBookItems.addWidget(bookItemWidget)
+        self.ui.verticalLayoutBookItems.addItem(spacer)
         self.bookItemWidgets.append(bookItemWidget)
 
     def onToolButtonRemoveBookClicked(self):
