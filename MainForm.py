@@ -98,7 +98,7 @@ def processEventSleep(msec):
 
 class MainWidget(QWidget):
     driver: webdriver
-    driverOptions: webdriver.ChromeOptions
+    clockDriver: webdriver
     bookItemWidgets = []
     currentBookItemWidget: BookItemWidget
     dateElementSelector: str
@@ -111,7 +111,7 @@ class MainWidget(QWidget):
         self.ui.labelCountDown.setVisible(False)
 
         date = QDate.currentDate()
-        date.setDate(date.year(), ((date.month() + 1) % 12), date.day())
+        date.setDate(date.year(), ((date.month() % 12) + 1), date.day())
         self.ui.calendarWidget.setSelectedDate(date)
 
         self.ui.pushButtonExecute.clicked.connect(self.onPushButtonExecuteClicked)
@@ -207,12 +207,19 @@ class MainWidget(QWidget):
 
         settings.sync()
 
-    def initWebDriver(self):
-        self.driverOptions = webdriver.ChromeOptions()
-        self.driverOptions.add_experimental_option("detach", True)
-        self.driverOptions.add_experimental_option("useAutomationExtension", False)
-        self.driver = webdriver.Chrome(options=self.driverOptions)
+    def openWebPage(self):
+        driverOptions = webdriver.ChromeOptions()
+        driverOptions.add_experimental_option("detach", True)
+        self.driver = webdriver.Chrome(options=driverOptions)
         self.driver.implicitly_wait(10)
+        self.driver.get('https://www.gunpouc.or.kr')
+
+        driverOptions = webdriver.ChromeOptions()
+        driverOptions.headless = True
+        self.clockDriver = webdriver.Chrome(options=driverOptions)
+        self.clockDriver.implicitly_wait(10)
+        self.clockDriver.get("https://time.navyism.com/?host=www.gunpouc.or.kr")
+
         return True
 
     def login(self):
@@ -280,19 +287,16 @@ class MainWidget(QWidget):
         return True
 
     def waitServerTime(self):
-        clockDriver = webdriver.Chrome()
-        clockDriver.get("https://time.navyism.com/?host=www.gunpouc.or.kr")
+        if waitWebElementClickable(self.clockDriver, 10, (By.XPATH, '//*[@id="time_area"]')) == False: return False
 
-        if waitWebElementClickable(clockDriver, 10, (By.XPATH, '//*[@id="time_area"]')) == False: return False
-
-        openTime = QTime(10, 0)
+        openTime = QTime(15, 34) # 서버 오픈 시간
         self.ui.labelCountDown.setVisible(True)
 
         timer = QElapsedTimer()
         timer.start()
 
         while True:
-            timeText = clockDriver.find_element(By.XPATH, '//*[@id="time_area"]').text
+            timeText = self.clockDriver.find_element(By.XPATH, '//*[@id="time_area"]').text
             currDateTime = QDateTime.fromString(timeText, 'yyyy년 MM월 dd일 hh시 mm분 ss초')
 
             totalSec = currDateTime.time().secsTo(openTime)
@@ -314,7 +318,9 @@ class MainWidget(QWidget):
 
             # 자동 로그아웃 방지. 제한 25분
             if timer.hasExpired(60*20*1000):
-                self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
+                if waitWebElementClickable(self.driver, 5, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')):
+                    self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
+                    timer.start()
 
             processEventSleep(1)
 
@@ -338,7 +344,7 @@ class MainWidget(QWidget):
             elif dateStateText == '예약불가':
                 dateElement = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, self.dateElementSelector)))
                 dateElement.click() # 날짜 클릭
-                processEventSleep(50)
+                processEventSleep(1)
             else:
                 return -1
 
@@ -452,14 +458,14 @@ class MainWidget(QWidget):
         else:
             return False
 
-    def onPushButtonExecuteClicked(self):
+    def executeBook(self):
         self.ui.textEditLog.clear()
         self.dateElementSelector = '#date-' + self.ui.calendarWidget.selectedDate().toString('yyyyMMdd')
 
         message = '예약 시작 ' + QTime.currentTime().toString();
         self.appendLogMessage(message)
 
-        if self.initWebDriver():
+        if self.openWebPage():
             self.appendLogMessage("브라우저 실행")
         else:
             self.appendLogMessage("브라우저 실행 실패")
@@ -477,6 +483,9 @@ class MainWidget(QWidget):
             self.appendLogMessage("조회 실패")
             return
 
+        message = '조회 시작 ' + QTime.currentTime().toString();
+        self.appendLogMessage(message)
+
         bookNumber = 0
 
         for self.currentBookItemWidget in self.bookItemWidgets:
@@ -486,8 +495,6 @@ class MainWidget(QWidget):
                 continue
 
             self.appendLogMessage(str(bookNumber) + ' --------------------------------------------')
-            message = '조회 시작 ' + QTime.currentTime().toString();
-            self.appendLogMessage(message)
 
             centerText = self.currentBookItemWidget.centerText()
             facilityText = self.currentBookItemWidget.facilityText()
@@ -535,6 +542,7 @@ class MainWidget(QWidget):
                 pass
             else:
                 self.appendLogMessage("로봇이 아닙니다(1) 에서 막히네.. 글렀어..")
+                self.ui.pushButtonExecute.setEnabled(True)
                 return
 
             if self.applyBookInfo():
@@ -554,6 +562,13 @@ class MainWidget(QWidget):
                 break
             else:
                 self.appendLogMessage("예약 실패라고?!")
+
+    def onPushButtonExecuteClicked(self):
+        self.ui.pushButtonExecute.setEnabled(False)
+        self.ui.pushButtonSave.setEnabled(False)
+        self.executeBook()
+        self.ui.pushButtonExecute.setEnabled(True)
+        self.ui.pushButtonSave.setEnabled(True)
 
     def onToolButtonAddBookClicked(self):
         bookItemWidget = BookItemWidget(self)
