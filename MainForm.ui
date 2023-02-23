@@ -32,7 +32,7 @@
      <item>
       <widget class="QLabel" name="labelCountDown">
        <property name="text">
-        <string>0시 0분 0초 남음</string>
+        <string>시작까지 0시 0분 0초 남음</string>
        </property>
       </widget>
      </item>

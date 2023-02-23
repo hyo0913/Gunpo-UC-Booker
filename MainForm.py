@@ -233,11 +233,12 @@ class MainWidget(QWidget):
         return True
 
     def goToBookPage(self):
-        self.driver.get('https://www.gunpouc.or.kr/fmcs/157')
+        if self.driver.current_url != 'https://www.gunpouc.or.kr/fmcs/157':
+            self.driver.get('https://www.gunpouc.or.kr/fmcs/157')
 
-        if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')) == False: return False
-        self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
-        processEventSleep(200)
+            if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')) == False: return False
+            self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
+            processEventSleep(1)
 
         return True
 
@@ -310,7 +311,7 @@ class MainWidget(QWidget):
             countDownText = ''
             if hour > 0: countDownText = str(hour) + '시간 '
             if min > 0: countDownText = countDownText + str(min) + '분 '
-            countDownText = countDownText + str(sec) + '초 남음'
+            countDownText = '시작까지 ' + countDownText + str(sec) + '초 남음'
 
             self.ui.labelCountDown.setText(countDownText)
 
@@ -320,9 +321,10 @@ class MainWidget(QWidget):
 
             # 자동 로그아웃 방지. 제한 25분
             if timer.hasExpired(60*20*1000):
-                if waitWebElementClickable(self.driver, 5, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')):
-                    self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
-                    timer.start()
+                if self.goToBookPage():
+                    if waitWebElementClickable(self.driver, 5, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')):
+                        self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
+                        timer.start()
 
             processEventSleep(1)
 
@@ -368,7 +370,7 @@ class MainWidget(QWidget):
         checkboxSellector = '#checkbox_time_' + str(timeIndex)
         if waitWebElementClickable(self.driver, 3, (By.CSS_SELECTOR, checkboxSellector)) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, checkboxSellector).click()
-        processEventSleep(100)
+        processEventSleep(10)
 
         return True
 
@@ -380,7 +382,7 @@ class MainWidget(QWidget):
         # 로봇이 아닙니다 체크 박스 클릭
         if waitWebElementClickable(self.driver, 5, (By.CSS_SELECTOR, '#recaptcha-anchor')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#recaptcha-anchor').click()
-        processEventSleep(300)
+        processEventSleep(10)
 
         # 로봇이 아닙니다 체크 기다림
         timeout = 2
@@ -397,30 +399,30 @@ class MainWidget(QWidget):
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]').click()
-        processEventSleep(100)
+        processEventSleep(30)
 
         return True
 
     def applyBookInfo(self):
         if waitWebElement(self.driver, 5, (By.XPATH, '//*[@id="team_nm"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="team_nm"]').send_keys(self.ui.lineEditTeamName.text())
-        processEventSleep(50)
+        #processEventSleep(50)
 
-        if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="users"]')) == False: return False
+        #if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="users"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="users"]').send_keys(self.ui.spinBoxPlayerCount.value())
-        processEventSleep(70)
+        #processEventSleep(30)
 
-        if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="mobile_tel"]')) == False: return False
+        #if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="mobile_tel"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="mobile_tel"]').send_keys(self.ui.lineEditPhoneNumber.text())
-        processEventSleep(60)
+        #processEventSleep(60)
 
-        if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="purpose"]')) == False: return False
+        #if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="purpose"]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="purpose"]').send_keys(self.ui.lineEditPurposeOfUse.text())
-        processEventSleep(50)
+        #processEventSleep(50)
 
-        if waitWebElement(self.driver, 1, (By.CSS_SELECTOR, '#agree_use1')) == False: return False
+        #if waitWebElement(self.driver, 1, (By.CSS_SELECTOR, '#agree_use1')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#agree_use1').click()
-        processEventSleep(40)
+        #processEventSleep(40)
 
         return True
 
@@ -505,6 +507,12 @@ class MainWidget(QWidget):
             timeText = self.currentBookItemWidget.time().toString()
             message = centerText + ' > ' + facilityText + ' > ' + areaText + ' - ' + dateText + ' - ' + timeText
             self.appendLogMessage(message)
+
+            if self.goToBookPage():
+                self.appendLogMessage("조회 페이지 이동")
+            else:
+                self.appendLogMessage("조회 페이지 이동 실패")
+                continue
 
             if self.selectPlace():
                 pass
