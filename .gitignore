@@ -127,8 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-Config.ini
 ui_BookItemForm.py
 ui_MainForm.py
-makeInstall.bat.bak
-GunpoucBooker.pyproject.user
+*.pyproject.user
+*.ini
+*.bak
