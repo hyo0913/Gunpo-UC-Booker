@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>463</width>
+    <width>532</width>
     <height>22</height>
    </rect>
   </property>
@@ -37,7 +37,7 @@
     <widget class="QComboBox" name="comboBoxCenter">
      <item>
       <property name="text">
-       <string>소규모체육시설(송죽체육관)</string>
+       <string>송죽다목적체육관/소규모체육시설</string>
       </property>
      </item>
     </widget>
