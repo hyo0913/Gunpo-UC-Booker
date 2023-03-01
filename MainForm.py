@@ -290,7 +290,10 @@ class MainWidget(QWidget):
         return True
 
     def waitServerTime(self):
-        if waitWebElementClickable(self.clockDriver, 10, (By.XPATH, '//*[@id="time_area"]')) == False: return False
+        #if waitWebElement(self.clockDriver, 10, (By.XPATH, '//*[@id="time_area"]')) == False: return False
+        if waitWebElementClickable(self.driver, 3, (By.CSS_SELECTOR, '#onlyTime')) == False: return False
+        self.driver.find_element(By.CSS_SELECTOR, '#onlyTime').click()
+        processEventSleep(5)
 
         openTime = QTime(10, 00) # 서버 오픈 시간
         self.ui.labelCountDown.setVisible(True)
@@ -300,9 +303,9 @@ class MainWidget(QWidget):
 
         while True:
             timeText = self.clockDriver.find_element(By.XPATH, '//*[@id="time_area"]').text
-            currDateTime = QDateTime.fromString(timeText, 'yyyy년 MM월 dd일 hh시 mm분 ss초')
+            currTime = QTime.fromString(timeText, 'hh시 mm분 ss초')
 
-            totalSec = currDateTime.time().secsTo(openTime)
+            totalSec = currTime.secsTo(openTime)
             sec = int(totalSec % 60)
             min = int(totalSec / 60)
             hour = int(min / 60)
