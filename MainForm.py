@@ -40,7 +40,6 @@ configKeyBookArea = "Area"
 configKeyBookTime = "Time"
 #
 configGroupAppSettings = "App_Settings"
-configKeyWaitRecaptcha = "Wait_recaptcha"
 configKeyWaitRecaptchaTimeout = "Wait_recaptcha_timeout"
 
 def getTimeIndex(hour):
@@ -132,7 +131,8 @@ class MainWidget(QWidget):
         self.ui.lineEditUserId.setText(settings.value(configKeyUserId))
         # password
         password = settings.value(configKeyUserPassword)
-        self.ui.lineEditUserPassword.setText(unobscure(password))
+        if password is not None:
+            self.ui.lineEditUserPassword.setText(unobscure(password))
         settings.endGroup() #configGroupUserInfo
 
         settings.beginGroup(configGroupBookApplicationForm)
@@ -143,8 +143,7 @@ class MainWidget(QWidget):
         settings.endGroup() #configGroupBookApplicationForm
 
         settings.beginGroup(configGroupAppSettings)
-        self.ui.checkBoxWaitRecaptcha.setChecked(bool(settings.value(configKeyWaitRecaptcha, False, bool)))
-        self.ui.spinBoxWaitRecaptchaTimeout.setValue(int(settings.value(configKeyWaitRecaptchaTimeout, 60, int)))
+        self.ui.spinBoxWaitRecaptchaTimeout.setValue(int(settings.value(configKeyWaitRecaptchaTimeout, self.ui.spinBoxWaitRecaptchaTimeout.value(), int)))
         settings.endGroup() # configGroupAppSettings
 
         settings.beginGroup(configGroupBookItems)
@@ -177,7 +176,8 @@ class MainWidget(QWidget):
         settings.setValue(configKeyUserId, self.ui.lineEditUserId.text())
         #password
         password = self.ui.lineEditUserPassword.text()
-        settings.setValue(configKeyUserPassword, obscure(password))
+        if password is not None:
+            settings.setValue(configKeyUserPassword, obscure(password))
         settings.endGroup() #configGroupUserInfo
 
         settings.beginGroup(configGroupBookApplicationForm)
@@ -188,7 +188,6 @@ class MainWidget(QWidget):
         settings.endGroup() #configGroupBookApplicationForm
 
         settings.beginGroup(configGroupAppSettings)
-        settings.setValue(configKeyWaitRecaptcha, self.ui.checkBoxWaitRecaptcha.isChecked())
         settings.setValue(configKeyWaitRecaptchaTimeout, self.ui.spinBoxWaitRecaptchaTimeout.value())
         settings.endGroup() # configGroupAppSettings
 
@@ -291,9 +290,9 @@ class MainWidget(QWidget):
 
     def waitServerTime(self):
         #if waitWebElement(self.clockDriver, 10, (By.XPATH, '//*[@id="time_area"]')) == False: return False
-        if waitWebElementClickable(self.driver, 3, (By.CSS_SELECTOR, '#onlyTime')) == False: return False
-        self.driver.find_element(By.CSS_SELECTOR, '#onlyTime').click()
-        processEventSleep(5)
+        if waitWebElement(self.clockDriver, 10, (By.XPATH, '//*[@id="onlyTime"]')) == False: return False
+        self.clockDriver.find_element(By.XPATH, '//*[@id="onlyTime"]').click()
+        processEventSleep(1)
 
         openTime = QTime(10, 00) # 서버 오픈 시간
         self.ui.labelCountDown.setVisible(True)
@@ -388,9 +387,7 @@ class MainWidget(QWidget):
         processEventSleep(10)
 
         # 로봇이 아닙니다 체크 기다림
-        timeout = 2
-        if self.ui.checkBoxWaitRecaptcha.isChecked():
-            timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
+        timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
 
         if waitWebElementAttributeText(self.driver, timeout, (By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'):
             pass
@@ -439,9 +436,7 @@ class MainWidget(QWidget):
         processEventSleep(300)
 
         # 로봇이 아닙니다 체크 기다림
-        timeout = 2
-        if self.ui.checkBoxWaitRecaptcha.isChecked():
-            timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
+        timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
 
         if waitWebElementAttributeText(self.driver, timeout, (By.CSS_SELECTOR, '#recaptcha-anchor'), 'aria-checked', 'true'):
             pass
