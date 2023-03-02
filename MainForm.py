@@ -216,7 +216,7 @@ class MainWidget(QWidget):
         self.driver.get('https://www.gunpouc.or.kr')
 
         driverOptions = webdriver.ChromeOptions()
-        driverOptions.headless = True
+        #driverOptions.add_argument('--headless') # 비정상 종료시 브라우저가 종료 안되는 증상 발생
         self.clockDriver = webdriver.Chrome(options=driverOptions)
         self.clockDriver.implicitly_wait(10)
         self.clockDriver.get("https://time.navyism.com/?host=www.gunpouc.or.kr")
