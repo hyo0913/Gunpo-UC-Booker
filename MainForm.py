@@ -18,6 +18,9 @@ from selenium.webdriver.support.select import Select
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+
+from subprocess import CREATE_NO_WINDOW
 
 from obscure_password import obscure, unobscure
 
@@ -209,15 +212,22 @@ class MainWidget(QWidget):
         settings.sync()
 
     def openWebPage(self):
+        # 군포도시공사
         driverOptions = webdriver.ChromeOptions()
         driverOptions.add_experimental_option("detach", True)
-        self.driver = webdriver.Chrome(options=driverOptions)
+
+        service = Service()
+        service.creationflags = CREATE_NO_WINDOW
+
+        self.driver = webdriver.Chrome(service=service, options=driverOptions)
         self.driver.implicitly_wait(10)
         self.driver.get('https://www.gunpouc.or.kr')
 
+        # 네이비즘
         driverOptions = webdriver.ChromeOptions()
         #driverOptions.add_argument('--headless') # 비정상 종료시 브라우저가 종료 안되는 증상 발생
-        self.clockDriver = webdriver.Chrome(options=driverOptions)
+
+        self.clockDriver = webdriver.Chrome(service=service, options=driverOptions)
         self.clockDriver.implicitly_wait(10)
         self.clockDriver.get("https://time.navyism.com/?host=www.gunpouc.or.kr")
 
