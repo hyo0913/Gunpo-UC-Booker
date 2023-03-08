@@ -229,6 +229,9 @@ class MainWidget(QWidget):
         self.clockDriver.implicitly_wait(10)
         self.clockDriver.get("https://time.navyism.com/?host=www.gunpouc.or.kr")
 
+        if waitWebElement(self.clockDriver, 10, (By.XPATH, '//*[@id="onlyTime"]')) == False: return False
+        self.clockDriver.find_element(By.XPATH, '//*[@id="onlyTime"]').click()
+
         return True
 
     def login(self):
@@ -302,11 +305,6 @@ class MainWidget(QWidget):
         return True
 
     def waitServerTime(self):
-        #if waitWebElement(self.clockDriver, 10, (By.XPATH, '//*[@id="time_area"]')) == False: return False
-        if waitWebElement(self.clockDriver, 10, (By.XPATH, '//*[@id="onlyTime"]')) == False: return False
-        self.clockDriver.find_element(By.XPATH, '//*[@id="onlyTime"]').click()
-        processEventSleep(1)
-
         openTime = QTime(10, 00) # 서버 오픈 시간
         self.ui.labelCountDown.setVisible(True)
 
