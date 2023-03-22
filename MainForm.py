@@ -366,8 +366,14 @@ class MainWidget(QWidget):
                 return -1
 
         hour = self.currentBookItemWidget.time().hour()
-        timeIndex = str(getTimeIndex(hour) + 1)
-        timeStateText = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[5]/div[2]/div/div/table/tbody/tr[' + timeIndex + ']/td[3]'))).text
+        timeIndex = getTimeIndex(hour)
+
+        alignBoxElement = self.driver.find_element(By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[5]/div[2]/div')
+        tableElement = alignBoxElement.find_element(By.TAG_NAME, 'table')
+        bodyElement = tableElement.find_element(By.TAG_NAME, 'tbody')
+        rowElement = bodyElement.find_elements(By.TAG_NAME, 'tr')[timeIndex]
+        timeStateElement = rowElement.find_elements(By.TAG_NAME, 'td')[2]
+        timeStateText = timeStateElement.text
 
         if (timeStateText == '예약완료') or (timeStateText == '마감'):
             return 1
