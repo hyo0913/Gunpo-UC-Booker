@@ -41,6 +41,8 @@ configKeyBookTime = "Time"
 #
 configGroupAppSettings = "App_Settings"
 configKeyWaitRecaptchaTimeout = "Wait_recaptcha_timeout"
+configKeyBookStartTime = "Book_start_time"
+configKeyBookStartCalibration = "Book_start_calibration"
 
 def getTimeIndex(hour):
     match hour:
@@ -144,6 +146,8 @@ class MainWidget(QWidget):
 
         settings.beginGroup(configGroupAppSettings)
         self.ui.spinBoxWaitRecaptchaTimeout.setValue(int(settings.value(configKeyWaitRecaptchaTimeout, self.ui.spinBoxWaitRecaptchaTimeout.value(), int)))
+        self.ui.timeEditBookStartTime.setTime(settings.value(configKeyBookStartTime, self.ui.timeEditBookStartTime.time(), QTime))
+        self.ui.doubleSpinBoxBookStartCalibration.setValue(float(settings.value(configKeyBookStartCalibration, self.ui.doubleSpinBoxBookStartCalibration.value(), float)))
         settings.endGroup() # configGroupAppSettings
 
         settings.beginGroup(configGroupBookItems)
@@ -189,6 +193,8 @@ class MainWidget(QWidget):
 
         settings.beginGroup(configGroupAppSettings)
         settings.setValue(configKeyWaitRecaptchaTimeout, self.ui.spinBoxWaitRecaptchaTimeout.value())
+        settings.setValue(configKeyBookStartTime, self.ui.timeEditBookStartTime.time())
+        settings.setValue(configKeyBookStartCalibration, self.ui.doubleSpinBoxBookStartCalibration.value())
         settings.endGroup() # configGroupAppSettings
 
         settings.beginGroup(configGroupBookItems)
@@ -229,8 +235,13 @@ class MainWidget(QWidget):
         self.clockDriver.implicitly_wait(10)
         self.clockDriver.get("https://time.navyism.com/?host=www.gunpouc.or.kr")
 
+        # 날짜 제거
         if waitWebElement(self.clockDriver, 10, (By.XPATH, '//*[@id="onlyTime"]')) == False: return False
         self.clockDriver.find_element(By.XPATH, '//*[@id="onlyTime"]').click()
+
+        # 밀리초 보기
+        if waitWebElement(self.clockDriver, 10, (By.XPATH, '//*[@id="msec_check"]')) == False: return False
+        self.clockDriver.find_element(By.XPATH, '//*[@id="msec_check"]').click()
 
         return True
 
@@ -305,30 +316,26 @@ class MainWidget(QWidget):
         return True
 
     def waitServerTime(self):
-        openTime = QTime(10, 00) # 서버 오픈 시간
         self.ui.labelCountDown.setVisible(True)
+        calibrationTime = int(self.ui.doubleSpinBoxBookStartCalibration.value() * 1000) # 보정 시간
+        print(calibrationTime)
+        openTime = self.ui.timeEditBookStartTime.time().addMSecs(calibrationTime) # 서버 오픈 시간
 
         timer = QElapsedTimer()
         timer.start()
 
         while True:
-            timeText = self.clockDriver.find_element(By.XPATH, '//*[@id="time_area"]').text
-            currTime = QTime.fromString(timeText, 'hh시 mm분 ss초')
+            currTime = QTime.fromString(self.clockDriver.find_element(By.XPATH, '//*[@id="time_area"]').text, 'hh시 mm분 ss초')
+            currMSec = int(self.clockDriver.find_element(By.XPATH, '//*[@id="msec_area"]').text)
+            currTime = currTime.addMSecs(currMSec)
 
-            totalSec = currTime.secsTo(openTime)
-            sec = int(totalSec % 60)
-            min = int(totalSec / 60)
-            hour = int(min / 60)
-            min = int(min % 60)
-
-            countDownText = ''
-            if hour > 0: countDownText = str(hour) + '시간 '
-            if min > 0: countDownText = countDownText + str(min) + '분 '
-            countDownText = '시작까지 ' + countDownText + str(sec) + '초 남음'
+            totalMSec = currTime.msecsTo(openTime)
+            waitTime = QTime(0, 0, 0).addMSecs(totalMSec)
+            countDownText = '남은 시간 : ' + waitTime.toString("hh:mm:ss.zzz")
 
             self.ui.labelCountDown.setText(countDownText)
 
-            if totalSec <= 0:
+            if totalMSec <= 0:
                 QApplication.processEvents()
                 break
 
