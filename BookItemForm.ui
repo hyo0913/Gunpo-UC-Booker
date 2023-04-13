@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>532</width>
+    <width>564</width>
     <height>22</height>
    </rect>
   </property>
@@ -49,10 +49,21 @@
        <string>대야미풋살장</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>한우물풋살장</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item>
     <widget class="QComboBox" name="comboBoxArea">
+     <property name="minimumSize">
+      <size>
+       <width>138</width>
+       <height>0</height>
+      </size>
+     </property>
      <item>
       <property name="text">
        <string>대야미A구장(전철쪽)</string>
@@ -61,6 +72,11 @@
      <item>
       <property name="text">
        <string>대야미B구장(차도쪽)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>한우물풋살장</string>
       </property>
      </item>
     </widget>
