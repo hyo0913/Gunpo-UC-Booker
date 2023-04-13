@@ -44,7 +44,7 @@
      <item>
       <widget class="QLabel" name="labelCountDown">
        <property name="text">
-        <string>남은 시간 : 00:00:00.000</string>
+        <string>남은 시간 : 00:00:00</string>
        </property>
       </widget>
      </item>
@@ -69,7 +69,7 @@
         </font>
        </property>
        <property name="text">
-        <string>버전 : 1.0.6</string>
+        <string>버전 : 1.0.7</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -214,7 +214,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEditPhoneNumber"/>
+           <widget class="QLineEdit" name="lineEditPhoneNumber">
+            <property name="text">
+             <string notr="true">010-1234-5678</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -277,7 +281,7 @@
           <item>
            <widget class="QLabel" name="labelBookStartTime">
             <property name="text">
-             <string>예약 시간</string>
+             <string>조회 시작 시간</string>
             </property>
            </widget>
           </item>
@@ -286,42 +290,21 @@
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
+            <property name="accelerated">
+             <bool>true</bool>
+            </property>
+            <property name="correctionMode">
+             <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
+            </property>
+            <property name="displayFormat">
+             <string>hh:mm:ss</string>
+            </property>
             <property name="time">
              <time>
               <hour>10</hour>
               <minute>0</minute>
               <second>0</second>
              </time>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_13">
-          <item>
-           <widget class="QLabel" name="labelBookStartCalibration">
-            <property name="text">
-             <string>시작 시간 보정</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QDoubleSpinBox" name="doubleSpinBoxBookStartCalibration">
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-            <property name="suffix">
-             <string>초</string>
-            </property>
-            <property name="minimum">
-             <double>-60.990000000000002</double>
-            </property>
-            <property name="maximum">
-             <double>60.990000000000002</double>
-            </property>
-            <property name="singleStep">
-             <double>0.100000000000000</double>
             </property>
            </widget>
           </item>

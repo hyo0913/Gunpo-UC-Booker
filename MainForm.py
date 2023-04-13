@@ -42,7 +42,6 @@ configKeyBookTime = "Time"
 configGroupAppSettings = "App_Settings"
 configKeyWaitRecaptchaTimeout = "Wait_recaptcha_timeout"
 configKeyBookStartTime = "Book_start_time"
-configKeyBookStartCalibration = "Book_start_calibration"
 
 def getTimeIndex(hour):
     match hour:
@@ -147,7 +146,6 @@ class MainWidget(QWidget):
         settings.beginGroup(configGroupAppSettings)
         self.ui.spinBoxWaitRecaptchaTimeout.setValue(int(settings.value(configKeyWaitRecaptchaTimeout, self.ui.spinBoxWaitRecaptchaTimeout.value(), int)))
         self.ui.timeEditBookStartTime.setTime(settings.value(configKeyBookStartTime, self.ui.timeEditBookStartTime.time(), QTime))
-        self.ui.doubleSpinBoxBookStartCalibration.setValue(float(settings.value(configKeyBookStartCalibration, self.ui.doubleSpinBoxBookStartCalibration.value(), float)))
         settings.endGroup() # configGroupAppSettings
 
         settings.beginGroup(configGroupBookItems)
@@ -194,7 +192,6 @@ class MainWidget(QWidget):
         settings.beginGroup(configGroupAppSettings)
         settings.setValue(configKeyWaitRecaptchaTimeout, self.ui.spinBoxWaitRecaptchaTimeout.value())
         settings.setValue(configKeyBookStartTime, self.ui.timeEditBookStartTime.time())
-        settings.setValue(configKeyBookStartCalibration, self.ui.doubleSpinBoxBookStartCalibration.value())
         settings.endGroup() # configGroupAppSettings
 
         settings.beginGroup(configGroupBookItems)
@@ -317,25 +314,23 @@ class MainWidget(QWidget):
 
     def waitServerTime(self):
         self.ui.labelCountDown.setVisible(True)
-        calibrationTime = int(self.ui.doubleSpinBoxBookStartCalibration.value() * 1000) # 보정 시간
-        print(calibrationTime)
-        openTime = self.ui.timeEditBookStartTime.time().addMSecs(calibrationTime) # 서버 오픈 시간
+        openTime = self.ui.timeEditBookStartTime.time() # 조회 시작 시간
 
         timer = QElapsedTimer()
         timer.start()
 
         while True:
             currTime = QTime.fromString(self.clockDriver.find_element(By.XPATH, '//*[@id="time_area"]').text, 'hh시 mm분 ss초')
-            currMSec = int(self.clockDriver.find_element(By.XPATH, '//*[@id="msec_area"]').text)
-            currTime = currTime.addMSecs(currMSec)
+            #currMSec = int(self.clockDriver.find_element(By.XPATH, '//*[@id="msec_area"]').text)
+            #currTime = currTime.addMSecs(currMSec)
 
-            totalMSec = currTime.msecsTo(openTime)
-            waitTime = QTime(0, 0, 0).addMSecs(totalMSec)
-            countDownText = '남은 시간 : ' + waitTime.toString("hh:mm:ss.zzz")
+            totalSec = currTime.secsTo(openTime)
+            waitTime = QTime(0, 0, 0).addSecs(totalSec)
+            countDownText = '남은 시간 : ' + waitTime.toString("hh:mm:ss")
 
             self.ui.labelCountDown.setText(countDownText)
 
-            if totalMSec <= 0:
+            if totalSec <= 0:
                 QApplication.processEvents()
                 break
 
@@ -547,13 +542,13 @@ class MainWidget(QWidget):
             if waitTime == False:
                 waitTime = True
                 if self.waitServerTime():
-                    self.appendLogMessage("지금이닷!!")
+                    self.appendLogMessage("예약 시간 도달")
                 else:
                     self.appendLogMessage("서버 시간 기다리기 실패")
 
             status = self.enquiryBookTime()
             if status == 0:
-                self.appendLogMessage("예약 시간 확인")
+                self.appendLogMessage("예약 활성화 - " + self.clockDriver.find_element(By.XPATH, '//*[@id="time_area"]').text)
             elif status > 0:
                 self.appendLogMessage("예약 불가")
                 continue
