@@ -259,6 +259,9 @@ class MainWidget(QWidget):
         if self.driver.current_url != 'https://www.gunpouc.or.kr/fmcs/157':
             self.driver.get('https://www.gunpouc.or.kr/fmcs/157')
 
+            if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')) == True:
+                self.driver.find_element(By.XPATH, '//*[@id="kntool_popup_layerpopup_content_24"]/div[2]/button[1]').click() #오늘 하루 안보기 버튼 클릭
+
             if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')) == False: return False
             self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
             processEventSleep(1)
