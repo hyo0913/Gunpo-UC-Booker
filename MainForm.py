@@ -2,7 +2,7 @@
 import sys
 
 from PySide6.QtWidgets import QApplication, QWidget
-from PySide6.QtCore import Qt, QSettings, QDateTime, QDate, QTime, QElapsedTimer
+from PySide6.QtCore import Qt, QSettings, QDate, QTime, QElapsedTimer
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
@@ -20,6 +20,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from obscure_password import obscure, unobscure
+
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+
+#import os.path
 
 configFile = "Config.ini"
 configGroupUserInfo = "User_Info"
@@ -89,6 +94,7 @@ def waitWebElementAttributeText(driver, timeout, locator, attribute, text):
         except:
             return False
 
+sleepTime = 300
 def processEventSleep(msec):
     timer = QElapsedTimer()
 
@@ -212,11 +218,18 @@ class MainWidget(QWidget):
         settings.sync()
 
     def openWebPage(self):
+        driverPath = 'chromedriver.exe'
+        #if os.path.exists('chromedriver.exe') == False:
+        try:
+            driverPath = ChromeDriverManager().install()
+        except:
+            return False
+
         # 군포도시공사
         driverOptions = webdriver.ChromeOptions()
-        driverOptions.add_experimental_option("detach", True)
+        #driverOptions.add_experimental_option("detach", True)
 
-        self.driver = webdriver.Chrome(options=driverOptions)
+        self.driver = webdriver.Chrome(service=ChromeService(driverPath), options=driverOptions)
         self.driver.implicitly_wait(10)
         self.driver.get('https://www.gunpouc.or.kr')
 
@@ -224,7 +237,7 @@ class MainWidget(QWidget):
         clockDriverOptions = webdriver.ChromeOptions()
         #clockDriverOptions.add_argument('--headless') # 비정상 종료시 브라우저가 종료 안되는 증상 발생
 
-        self.clockDriver = webdriver.Chrome(options=clockDriverOptions)
+        self.clockDriver = webdriver.Chrome(service=ChromeService(driverPath), options=clockDriverOptions)
 
         posX = self.driver.get_window_position().get('x') + self.driver.get_window_size().get('width')
         posY = self.driver.get_window_position().get('y')
@@ -259,12 +272,12 @@ class MainWidget(QWidget):
         if self.driver.current_url != 'https://www.gunpouc.or.kr/fmcs/157':
             self.driver.get('https://www.gunpouc.or.kr/fmcs/157')
 
-            if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')) == True:
+            if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="kntool_popup_layerpopup_content_24"]/div[2]/button[1]')) == True:
                 self.driver.find_element(By.XPATH, '//*[@id="kntool_popup_layerpopup_content_24"]/div[2]/button[1]').click() #오늘 하루 안보기 버튼 클릭
 
             if waitWebElement(self.driver, 2, (By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button')) == False: return False
             self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
-            processEventSleep(1)
+            processEventSleep(sleepTime)
 
         return True
 
@@ -344,17 +357,19 @@ class MainWidget(QWidget):
                         self.driver.find_element(By.XPATH, '//*[@id="search"]/fieldset/div/div/div/button').click() #조회 버튼 클릭
                         timer.start()
 
-            processEventSleep(1)
+            processEventSleep(sleepTime)
 
         self.ui.labelCountDown.setVisible(False)
 
         return True
 
     def enquiryBookTime(self):
+        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#search > fieldset > div > div > div > button'))).click()
+
         #dateElement = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, self.dateElementSelector)))
         dateElement = self.driver.find_element(By.CSS_SELECTOR, self.dateElementSelector)
         dateElement.click()
-        processEventSleep(1)
+        processEventSleep(sleepTime)
 
         while True:
             dateStateText = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, self.dateElementSelector + ' > span'))).text
@@ -366,7 +381,7 @@ class MainWidget(QWidget):
             elif dateStateText == '예약불가':
                 dateElement = WebDriverWait(self.driver, 1).until(EC.presence_of_element_located((By.CSS_SELECTOR, self.dateElementSelector)))
                 dateElement.click() # 날짜 클릭
-                processEventSleep(1)
+                processEventSleep(sleepTime)
             else:
                 return -1
 
@@ -394,7 +409,7 @@ class MainWidget(QWidget):
         checkboxSellector = '#checkbox_time_' + str(timeIndex)
         if waitWebElementClickable(self.driver, 3, (By.CSS_SELECTOR, checkboxSellector)) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, checkboxSellector).click()
-        processEventSleep(1)
+        processEventSleep(sleepTime)
 
         return True
 
@@ -406,7 +421,7 @@ class MainWidget(QWidget):
         # 로봇이 아닙니다 체크 박스 클릭
         if waitWebElementClickable(self.driver, 5, (By.CSS_SELECTOR, '#recaptcha-anchor')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#recaptcha-anchor').click()
-        processEventSleep(1)
+        processEventSleep(sleepTime)
 
         # 로봇이 아닙니다 체크 기다림
         timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
@@ -421,7 +436,7 @@ class MainWidget(QWidget):
 
         if waitWebElement(self.driver, 1, (By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]')) == False: return False
         self.driver.find_element(By.XPATH, '//*[@id="contents"]/article/div[1]/div/div[6]/div[2]').click()
-        processEventSleep(1)
+        processEventSleep(sleepTime)
 
         return True
 
@@ -450,7 +465,7 @@ class MainWidget(QWidget):
 
         if waitWebElementClickable(self.driver, 5, (By.CSS_SELECTOR, '#recaptcha-anchor')) == False: return False
         self.driver.find_element(By.CSS_SELECTOR, '#recaptcha-anchor').click()
-        processEventSleep(1)
+        processEventSleep(sleepTime)
 
         # 로봇이 아닙니다 체크 기다림
         timeout = self.ui.spinBoxWaitRecaptchaTimeout.value()
@@ -590,7 +605,12 @@ class MainWidget(QWidget):
                 self.appendLogMessage("예약 실패라고?!")
 
     def onPushButtonExecuteClicked(self):
-        self.executeBook()
+        try:
+            self.executeBook()
+
+        finally:
+            self.driver.quit()
+            self.clockDriver.quit()
 
     def onToolButtonAddBookClicked(self):
         bookItemWidget = BookItemWidget(self)
