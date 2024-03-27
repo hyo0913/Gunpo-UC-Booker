@@ -94,7 +94,7 @@ def waitWebElementAttributeText(driver, timeout, locator, attribute, text):
         except:
             return False
 
-sleepTime = 1000
+sleepTime = 400
 def processEventSleep(msec):
     timer = QElapsedTimer()
 
